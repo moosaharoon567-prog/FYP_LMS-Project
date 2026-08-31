@@ -30,14 +30,24 @@ app.use(express.urlencoded({ extended: true }));
 
 // Connect to database and initialize default data
 const initializeApp = async () => {
-  try {
-    await connectDB();
-    await createDefaultUsers();
-    console.log('Application initialized successfully');
-  } catch (error) {
-    console.error('Initialization error:', error);
-  }
+  await connectDB();
+  await createDefaultUsers();
+  console.log('Application initialized successfully');
 };
+
+// Ensure the DB is connected before handling any request.
+// (Needed on Vercel: cold starts invoke the exported app directly,
+// they don't go through the initializeApp().then(...) block below.)
+let initPromise = null;
+app.use((req, res, next) => {
+  if (!initPromise) {
+    initPromise = initializeApp().catch((err) => {
+      initPromise = null; // allow retry on next request
+      throw err;
+    });
+  }
+  initPromise.then(() => next()).catch(next);
+});
 
 // Create default users
 const createDefaultUsers = async () => {
@@ -108,16 +118,19 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
-
-initializeApp().then(() => {
+// Only start a listening server when run directly (local dev / `npm start`).
+// On Vercel, the platform imports this file and calls the exported `app`
+// directly for each request — it must NOT call app.listen().
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
-});
 
-process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err.message);
-  process.exit(1);
-});
+  process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = app;
