@@ -54,7 +54,9 @@ export const coursesAPI = {
     api.post(`/courses/${id}/materials`, { title, file_url }),
   update: (id: string, data: { title?: string; description?: string }) =>
     api.put(`/courses/${id}`, data),
-  delete: (id: string) => api.delete(`/courses/${id}`),
+    delete: (id: string) => api.delete(`/courses/${id}`),
+  assignTeacher: (id: string, teacher_id: string) =>
+    api.patch(`/courses/${id}/assign-teacher`, { teacher_id }),
 };
 
 // Assignments API
