@@ -137,7 +137,7 @@ export function AssignmentSubmit() {
           <div className="flex items-center gap-2 text-sm">
             <FileText className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">Course:</span>
-            <span>{assignment.course_id.title}</span>
+            <span>{assignment.course_id?.title}</span>
           </div>
 
           <div className="flex items-center gap-2 text-sm">
