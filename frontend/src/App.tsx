@@ -86,6 +86,14 @@ function App() {
         }
       />
       <Route
+        path="/quizzes/:id/submissions"
+        element={
+          <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+            <QuizSubmissions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/users"
         element={
           <ProtectedRoute allowedRoles={['admin']}>
