@@ -8,7 +8,8 @@ import { Courses } from '@/pages/Courses';
 import { CourseDetail } from '@/pages/CourseDetail';
 import { AssignmentSubmit } from '@/pages/AssignmentSubmit';
 import { AssignmentGrade } from '@/pages/AssignmentGrade';
-import { QuizTake } from '@/pages/QuizTake';
+import { QuizTake } from '@/pages/QuizTake'; 
+import { QuizSubmissions } from '@/pages/QuizSubmissions';
 import { UserManagement } from '@/pages/UserManagement';
 import { Settings } from '@/pages/Settings';
 
