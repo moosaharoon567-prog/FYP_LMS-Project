@@ -114,9 +114,9 @@ export function AssignmentGrade() {
                     <User className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <CardTitle className="text-lg">
-                        {submission.student_id.name}
+                        {submission.student_id?.name}
                       </CardTitle>
-                      <CardDescription>{submission.student_id.email}</CardDescription>
+                      <CardDescription>{submission.student_id?.email}</CardDescription>
                     </div>
                   </div>
                   {submission.grade !== null ? (
@@ -170,7 +170,7 @@ export function AssignmentGrade() {
             <CardHeader>
               <CardTitle>Grade Submission</CardTitle>
               <CardDescription>
-                Grading {gradingSubmission.student_id.name}'s submission
+                Grading {gradingSubmission.student_id?.name}'s submission
               </CardDescription>
             </CardHeader>
             <CardContent>
