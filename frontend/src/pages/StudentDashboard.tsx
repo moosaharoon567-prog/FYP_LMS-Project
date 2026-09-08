@@ -7,13 +7,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { dashboardAPI } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import { BookOpen, FileText, Clock, GraduationCap, ArrowRight, Calendar } from 'lucide-react';
-import type { Course, Assignment, Quiz, Submission } from '@/types';
+import type { Course, Assignment, Quiz, Submission, QuizSubmission } from '@/types';
 
 interface DashboardData {
   enrolledCourses: Course[];
   pendingAssignments: Assignment[];
   upcomingQuizzes: Quiz[];
   recentGrades: Submission[];
+  recentQuizGrades: QuizSubmission[];
   stats: {
     totalEnrolled: number;
     pendingAssignments: number;
@@ -175,7 +176,7 @@ export function StudentDashboard() {
                   <div
                     key={assignment._id}
                     className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50"
-                    onClick={() => navigate(`/courses/${assignment.course_id._id}`)}
+                    onClick={() => navigate(`/assignments/${assignment._id}/submit`)}
                   >
                     <div>
                       <p className="font-medium">{assignment.title}</p>
@@ -217,7 +218,7 @@ export function StudentDashboard() {
                   <div
                     key={quiz._id}
                     className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50"
-                    onClick={() => navigate(`/courses/${quiz.course_id._id}`)}
+                    onClick={() => navigate(`/quizzes/${quiz._id}/take`)}
                   >
                     <div>
                       <p className="font-medium">{quiz.title}</p>
@@ -242,32 +243,55 @@ export function StudentDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Recent Grades</CardTitle>
-                <CardDescription>Your latest assignment scores</CardDescription>
+                <CardDescription>Your latest assignment & quiz scores</CardDescription>
               </div>
               <GraduationCap className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardHeader>
           <CardContent>
-            {data.recentGrades.length === 0 ? (
+            {data.recentGrades.length === 0 && data.recentQuizGrades.length === 0 ? (
               <p className="text-sm text-muted-foreground">No grades yet.</p>
             ) : (
               <div className="space-y-4">
-                {data.recentGrades.map((grade) => (
-                  <div
-                    key={grade._id}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div>
-                      <p className="font-medium">{grade.assignment_id.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Submitted on {formatDate(grade.submission_time)}
-                      </p>
+                {[
+                  ...data.recentGrades.map((grade) => ({
+                    key: `a-${grade._id}`,
+                    title: grade.assignment_id.title,
+                    type: 'Assignment',
+                    date: grade.submission_time,
+                    score: grade.grade ?? 0,
+                    max: grade.assignment_id.max_score,
+                    courseId: (grade.assignment_id.course_id as any)?._id ?? grade.assignment_id.course_id,
+                  })),
+                  ...data.recentQuizGrades.map((sub) => ({
+                    key: `q-${sub._id}`,
+                    title: sub.quiz_id.title,
+                    type: 'Quiz',
+                    date: sub.submitted_at,
+                    score: sub.score,
+                    max: sub.quiz_id.question_set?.length ?? 0,
+                    courseId: (sub.quiz_id.course_id as any)?._id ?? sub.quiz_id.course_id,
+                  })),
+                ]
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .slice(0, 6)
+                  .map((item) => (
+                    <div
+                      key={item.key}
+                      className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                      onClick={() => item.courseId && navigate(`/courses/${item.courseId}`)}
+                    >
+                      <div>
+                        <p className="font-medium">{item.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {item.type} • {formatDate(item.date)}
+                        </p>
+                      </div>
+                      <Badge variant={item.max > 0 && item.score >= item.max / 2 ? 'default' : 'destructive'}>
+                        {item.score} / {item.max}
+                      </Badge>
                     </div>
-                    <Badge variant={grade.grade && grade.grade >= (grade.assignment_id.max_score / 2) ? 'default' : 'destructive'}>
-                      {grade.grade} / {grade.assignment_id.max_score}
-                    </Badge>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </CardContent>
