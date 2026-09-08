@@ -176,7 +176,7 @@ export function TeacherDashboard() {
                     <div>
                       <p className="font-medium">{submission.assignment_id.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        Assignment • By {submission.student_id.name}
+                        Assignment • By {submission.student_id?.name}
                       </p>
                     </div>
                     {submission.grade === null ? (
@@ -198,7 +198,7 @@ export function TeacherDashboard() {
                     <div>
                       <p className="font-medium">{submission.quiz_id.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        Quiz • By {submission.student_id.name}
+                        Quiz • By {submission.student_id?.name}
                       </p>
                     </div>
                     <Badge variant="default" className="flex items-center gap-1">
@@ -240,7 +240,7 @@ export function TeacherDashboard() {
                     <div>
                       <p className="font-medium">{assignment.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        {assignment.course_id.title}
+                        {assignment.course_id?.title}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
