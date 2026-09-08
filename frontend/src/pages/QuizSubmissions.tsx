@@ -86,7 +86,7 @@ export function QuizSubmissions() {
                       <User className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <CardTitle className="text-lg">{submission.student_id.name}</CardTitle>
-                        <CardDescription>{submission.student_id.email}</CardDescription>
+                        <CardDescription>{submission.student_id?.email}</CardDescription>
                       </div>
                     </div>
                     <Badge variant={passed ? 'default' : 'destructive'}>
