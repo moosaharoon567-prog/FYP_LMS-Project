@@ -12,10 +12,11 @@ router.get('/student', protect, async (req, res) => {
   try {
     const studentId = req.user._id;
 
-    const enrolledCourses = await Course.find({ enrolled_students: studentId })
+    const enrolledCoursesRaw = await Course.find({ enrolled_students: studentId })
       .populate('teacher_id', 'name')
       .limit(5);
 
+    const enrolledCourses = enrolledCoursesRaw.filter(c => c.teacher_id);
     const courseIds = enrolledCourses.map(c => c._id);
     const assignments = await Assignment.find({
       course_id: { $in: courseIds },
@@ -85,13 +86,16 @@ router.get('/teacher', protect, async (req, res) => {
       grade: null
     });
 
-    const recentSubmissions = await Submission.find({
+    const recentSubmissionsRaw = await Submission.find({
       assignment_id: { $in: assignmentIds }
     })
       .populate('student_id', 'name')
       .populate('assignment_id', 'title course_id max_score')
       .sort({ submission_time: -1 })
-      .limit(5);
+      .limit(20);
+    const recentSubmissions = recentSubmissionsRaw
+      .filter(s => s.student_id && s.assignment_id)
+      .slice(0, 5);
 
     const recentAssignments = await Assignment.find({ teacher_id: teacherId })
       .populate('course_id', 'title')
@@ -99,13 +103,16 @@ router.get('/teacher', protect, async (req, res) => {
       .limit(5);
 
     const quizIds = await Quiz.find({ course_id: { $in: allCourses.map(c => c._id) } }).select('_id');
-    const recentQuizSubmissions = await QuizSubmission.find({
+    const recentQuizSubmissionsRaw = await QuizSubmission.find({
       quiz_id: { $in: quizIds.map(q => q._id) }
     })
       .populate('student_id', 'name')
       .populate('quiz_id', 'title question_set course_id')
       .sort({ submitted_at: -1 })
-      .limit(5);
+      .limit(20);
+    const recentQuizSubmissions = recentQuizSubmissionsRaw
+      .filter(s => s.student_id && s.quiz_id)
+      .slice(0, 5);
 
     res.json({
       myCourses,
