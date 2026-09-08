@@ -358,13 +358,22 @@ export function CourseDetail() {
                     <p className="text-sm text-muted-foreground mb-4">
                       {quiz.question_set.length} questions
                     </p>
-                    {isEnrolled && !isTeacher && (
+                                       {isEnrolled && !isTeacher && (
                       <Button
                         size="sm"
                         onClick={() => navigate(`/quizzes/${quiz._id}/take`)}
                         disabled={new Date(quiz.deadline) < new Date()}
                       >
                         Take Quiz
+                      </Button>
+                    )}
+                    {isTeacher && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => navigate(`/quizzes/${quiz._id}/submissions`)}
+                      >
+                        View Submissions
                       </Button>
                     )}
                   </CardContent>
