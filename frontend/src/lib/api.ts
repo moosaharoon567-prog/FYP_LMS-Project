@@ -74,6 +74,7 @@ export const assignmentsAPI = {
   }) => api.post('/assignments', data),
   submit: (id: string, file_url: string) =>
     api.post(`/assignments/${id}/submit`, { file_url }),
+  getMySubmission: (id: string) => api.get(`/assignments/${id}/my-submission`),
   getSubmissions: (id: string) => api.get(`/assignments/${id}/submissions`),
   grade: (submissionId: string, grade: number, feedback?: string) =>
     api.put(`/assignments/submissions/${submissionId}/grade`, { grade, feedback }),
