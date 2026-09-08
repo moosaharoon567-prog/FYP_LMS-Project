@@ -176,6 +176,38 @@ router.post(
   }
 );
 
+router.patch('/:id/assign-teacher', protect, adminOnly, async (req, res) => {
+  try {
+    const { teacher_id } = req.body;
+    if (!teacher_id) {
+      return res.status(400).json({ message: 'teacher_id is required' });
+    }
+
+    const User = require('../models/User');
+    const teacher = await User.findById(teacher_id);
+    if (!teacher || teacher.role !== 'teacher') {
+      return res.status(400).json({ message: 'User not found or is not a teacher' });
+    }
+
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    course.teacher_id = teacher_id;
+    await course.save();
+
+    const populatedCourse = await Course.findById(course._id)
+      .populate('teacher_id', 'name email')
+      .populate('enrolled_students', 'name email');
+
+    res.json(populatedCourse);
+  } catch (error) {
+    console.error('Assign teacher error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 router.put('/:id', protect, teacherOnly, async (req, res) => {
   try {
     const { title, description } = req.body;
