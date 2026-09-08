@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { quizzesAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
-import { ArrowLeft, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import type { Quiz } from '@/types';
 
 export function QuizTake() {
@@ -18,6 +18,7 @@ export function QuizTake() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [result, setResult] = useState<{ score: number; total: number } | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -81,9 +82,12 @@ export function QuizTake() {
 
     setIsSubmitting(true);
     try {
-      await quizzesAPI.attempt(id!, answers);
+      const response = await quizzesAPI.attempt(id!, answers);
       toast.success('Quiz submitted successfully');
-      navigate('/dashboard');
+      setResult({
+        score: response.data.score,
+        total: quiz?.question_set.length ?? answers.length,
+      });
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to submit quiz');
       setIsSubmitting(false);
@@ -105,6 +109,29 @@ export function QuizTake() {
 
   if (!quiz) {
     return <div>Quiz not found</div>;
+  }
+
+  if (result) {
+    const passed = result.total > 0 && result.score >= result.total / 2;
+    return (
+      <div className="space-y-6">
+        <Card className={passed ? 'border-green-500' : 'border-destructive'}>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <CheckCircle className={`h-12 w-12 ${passed ? 'text-green-500' : 'text-destructive'}`} />
+            <p className="mt-4 text-lg font-medium">Quiz Submitted</p>
+            <p className="mt-2 text-3xl font-bold">
+              {result.score} / {result.total}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Your quiz was graded automatically.
+            </p>
+            <Button className="mt-6" onClick={() => navigate('/dashboard')}>
+              Back to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const isOverdue = new Date(quiz.deadline) < new Date();
