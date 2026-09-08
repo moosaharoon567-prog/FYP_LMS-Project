@@ -192,7 +192,7 @@ export function CourseDetail() {
           <h1 className="text-3xl font-bold">{course.title}</h1>
           <p className="text-muted-foreground">{course.description}</p>
           <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-            <span>Instructor: {course.teacher_id.name}</span>
+            <span>Instructor: {course.teacher_id?.name}</span>
             <span className="flex items-center gap-1">
               <Users className="h-4 w-4" />
               {course.enrolled_students.length} students
