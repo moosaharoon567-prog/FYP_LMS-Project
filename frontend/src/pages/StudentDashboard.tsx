@@ -140,7 +140,7 @@ export function StudentDashboard() {
                     <div>
                       <p className="font-medium">{course.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        By {course.teacher_id.name}
+                        By {course.teacher_id?.name}
                       </p>
                     </div>
                     <Badge variant="secondary">
