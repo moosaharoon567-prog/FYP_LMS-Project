@@ -16,12 +16,12 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { coursesAPI, assignmentsAPI, quizzesAPI } from '@/lib/api';
+import { coursesAPI, assignmentsAPI, quizzesAPI, usersAPI } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 import { ArrowLeft, BookOpen, FileText, Clock, Plus, ExternalLink, Users, CheckCircle } from 'lucide-react';
-import type { Course, Assignment, Quiz } from '@/types';
+import type { Course, Assignment, Quiz, User } from '@/types';
 
 export function CourseDetail() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +33,10 @@ export function CourseDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isTeacher, setIsTeacher] = useState(false);
+  const [isAssignTeacherOpen, setIsAssignTeacherOpen] = useState(false);
+  const [teachers, setTeachers] = useState<User[]>([]);
+  const [selectedTeacherId, setSelectedTeacherId] = useState('');
+  const [isAssigning, setIsAssigning] = useState(false);
 
   // Dialog states
   const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
@@ -73,10 +77,9 @@ export function CourseDetail() {
       setAssignments(assignmentsRes.data);
       setQuizzes(quizzesRes.data);
 
-      // Check enrollment and teacher status
       if (user) {
         setIsEnrolled(courseRes.data.enrolled_students.some((s: any) => s._id === user._id));
-        setIsTeacher(courseRes.data.teacher_id._id === user._id);
+        setIsTeacher(courseRes.data.teacher_id?._id === user._id);
       }
     } catch (error) {
       console.error('Failed to load course data:', error);
@@ -148,6 +151,21 @@ export function CourseDetail() {
     }
   };
 
+  const handleAssignTeacher = async () => {
+    if (!selectedTeacherId) return;
+    setIsAssigning(true);
+    try {
+      const res = await coursesAPI.assignTeacher(id!, selectedTeacherId);
+      setCourse(res.data);
+      toast.success('Teacher assigned successfully');
+      setIsAssignTeacherOpen(false);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to assign teacher');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
   const addQuestion = () => {
     setNewQuiz({
       ...newQuiz,
@@ -192,16 +210,28 @@ export function CourseDetail() {
           <h1 className="text-3xl font-bold">{course.title}</h1>
           <p className="text-muted-foreground">{course.description}</p>
           <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-            <span>Instructor: {course.teacher_id?.name}</span>
+            <span>Instructor: {course.teacher_id?.name ?? <span className="text-destructive font-medium">No teacher assigned</span>}</span>
             <span className="flex items-center gap-1">
               <Users className="h-4 w-4" />
               {course.enrolled_students.length} students
             </span>
           </div>
         </div>
-        {user?.role === 'student' && !isEnrolled && (
-          <Button onClick={handleEnroll}>Enroll in Course</Button>
-        )}
+        <div className="flex gap-2">
+          {user?.role === 'student' && !isEnrolled && (
+            <Button onClick={handleEnroll}>Enroll in Course</Button>
+          )}
+          {user?.role === 'admin' && (
+            <Button variant="outline" onClick={async () => {
+              const res = await usersAPI.getAll('teacher');
+              setTeachers(res.data);
+              setSelectedTeacherId('');
+              setIsAssignTeacherOpen(true);
+            }}>
+              Assign Teacher
+            </Button>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="materials" className="space-y-6">
@@ -246,7 +276,7 @@ export function CourseDetail() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <a
+                    
                       href={material.file_url}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -358,7 +388,7 @@ export function CourseDetail() {
                     <p className="text-sm text-muted-foreground mb-4">
                       {quiz.question_set.length} questions
                     </p>
-                                       {isEnrolled && !isTeacher && (
+                    {isEnrolled && !isTeacher && (
                       <Button
                         size="sm"
                         onClick={() => navigate(`/quizzes/${quiz._id}/take`)}
@@ -562,6 +592,41 @@ export function CourseDetail() {
               <Button type="submit">Add</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Teacher Dialog */}
+      <Dialog open={isAssignTeacherOpen} onOpenChange={setIsAssignTeacherOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Assign Teacher</DialogTitle>
+            <DialogDescription>Select a teacher to assign to this course.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Teacher</Label>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={selectedTeacherId}
+                onChange={(e) => setSelectedTeacherId(e.target.value)}
+              >
+                <option value="">Select a teacher...</option>
+                {teachers.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name} ({t.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAssignTeacherOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAssignTeacher} disabled={!selectedTeacherId || isAssigning}>
+              {isAssigning ? 'Assigning...' : 'Assign'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
