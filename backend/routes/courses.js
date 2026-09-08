@@ -19,10 +19,17 @@ router.get('/', protect, async (req, res) => {
       query.enrolled_students = req.user._id;
     }
 
-    const courses = await Course.find(query)
+    const coursesRaw = await Course.find(query)
       .populate('teacher_id', 'name email')
       .populate('enrolled_students', 'name email')
       .sort({ createdAt: -1 });
+
+    // Filter out null populated refs (deleted users/teachers)
+    const courses = coursesRaw.map(c => {
+      const obj = c.toObject();
+      obj.enrolled_students = obj.enrolled_students.filter(Boolean);
+      return obj;
+    });
 
     res.json(courses);
   } catch (error) {
