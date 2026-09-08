@@ -7,12 +7,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { dashboardAPI } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import { BookOpen, Users, FileText, ArrowRight, Clock, CheckCircle } from 'lucide-react';
-import type { Course, Submission, Assignment } from '@/types';
+import type { Course, Submission, Assignment, QuizSubmission } from '@/types';
 
 interface DashboardData {
   myCourses: Course[];
   recentSubmissions: Submission[];
   recentAssignments: Assignment[];
+  recentQuizSubmissions: QuizSubmission[];
   stats: {
     totalCourses: number;
     totalStudents: number;
@@ -96,7 +97,7 @@ export function TeacherDashboard() {
 
         <Card 
           className="cursor-pointer transition-colors hover:bg-muted/50"
-          onClick={() => navigate('/courses')}
+          onClick={() => document.getElementById('recent-submissions')?.scrollIntoView({ behavior: 'smooth' })}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Grading</CardTitle>
@@ -152,34 +153,30 @@ export function TeacherDashboard() {
         </Card>
 
         {/* Recent Submissions */}
-        <Card>
+        <Card id="recent-submissions">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Recent Submissions</CardTitle>
-                <CardDescription>Latest student submissions</CardDescription>
+                <CardDescription>Latest assignment & quiz submissions</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/courses')}>
-                View All
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
             </div>
           </CardHeader>
           <CardContent>
-            {data.recentSubmissions.length === 0 ? (
+            {data.recentSubmissions.length === 0 && data.recentQuizSubmissions.length === 0 ? (
               <p className="text-sm text-muted-foreground">No submissions yet.</p>
             ) : (
               <div className="space-y-4">
                 {data.recentSubmissions.map((submission) => (
                   <div
-                    key={submission._id}
+                    key={`a-${submission._id}`}
                     className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50"
-                    onClick={() => navigate(`/courses/${submission.assignment_id.course_id}`)}
+                    onClick={() => navigate(`/assignments/${submission.assignment_id._id}/grade`)}
                   >
                     <div>
                       <p className="font-medium">{submission.assignment_id.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        By {submission.student_id.name}
+                        Assignment • By {submission.student_id.name}
                       </p>
                     </div>
                     {submission.grade === null ? (
@@ -190,6 +187,24 @@ export function TeacherDashboard() {
                         Graded
                       </Badge>
                     )}
+                  </div>
+                ))}
+                {data.recentQuizSubmissions.map((submission) => (
+                  <div
+                    key={`q-${submission._id}`}
+                    className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                    onClick={() => navigate(`/quizzes/${submission.quiz_id._id}/submissions`)}
+                  >
+                    <div>
+                      <p className="font-medium">{submission.quiz_id.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Quiz • By {submission.student_id.name}
+                      </p>
+                    </div>
+                    <Badge variant="default" className="flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" />
+                      {submission.score} / {submission.quiz_id.question_set?.length ?? '?'}
+                    </Badge>
                   </div>
                 ))}
               </div>
