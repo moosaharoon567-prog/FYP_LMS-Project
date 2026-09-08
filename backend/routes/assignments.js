@@ -80,6 +80,26 @@ router.get('/student/pending', protect, async (req, res) => {
   }
 });
 
+router.get('/:id/my-submission', protect, async (req, res) => {
+  try {
+    const submission = await Submission.findOne({
+      assignment_id: req.params.id,
+      student_id: req.user._id
+    })
+      .populate('assignment_id', 'title max_score')
+      .sort({ submission_time: -1 });
+
+    if (!submission) {
+      return res.status(404).json({ message: 'No submission found' });
+    }
+
+    res.json(submission);
+  } catch (error) {
+    console.error('Get student submission error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 router.get('/:id', protect, async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id)
@@ -200,25 +220,6 @@ router.post(
     }
   }
 );
-router.get('/:id/my-submission', protect, async (req, res) => {
-  try {
-    const submission = await Submission.findOne({
-      assignment_id: req.params.id,
-      student_id: req.user._id
-    })
-      .populate('assignment_id', 'title max_score')
-      .sort({ submission_time: -1 });
-
-    if (!submission) {
-      return res.status(404).json({ message: 'No submission found' });
-    }
-
-    res.json(submission);
-  } catch (error) {
-    console.error('Get student submission error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
 router.get('/:id/submissions', protect, teacherOnly, async (req, res) => {
   try {
