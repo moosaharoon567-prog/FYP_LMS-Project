@@ -69,6 +69,18 @@ export interface QuizSubmission {
   submitted_at: string;
 }
 
+export interface QuizAttemptResult {
+  quiz: {
+    title: string;
+    total_questions: number;
+  };
+  submission: {
+    score: number;
+    answers: number[];
+    submitted_at: string;
+  };
+}
+
 export interface Notification {
   _id: string;
   user_id: string;
