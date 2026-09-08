@@ -207,7 +207,7 @@ export function Courses() {
                   <div>
                     <CardTitle className="line-clamp-1">{course.title}</CardTitle>
                     <CardDescription className="line-clamp-1">
-                      By {course.teacher_id.name}
+                      By {course.teacher_id?.name || 'Unknown Teacher'}
                     </CardDescription>
                   </div>
                   {isEnrolled(course) && <Badge>Enrolled</Badge>}
