@@ -86,12 +86,12 @@ export function Courses() {
       course.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const isEnrolled = (course: Course) => {
-    return course.enrolled_students.some((s) => s._id === user?._id);
+    const isEnrolled = (course: Course) => {
+    return course.enrolled_students.filter(Boolean).some((s) => s._id === user?._id);
   };
 
   const isTeacher = (course: Course) => {
-    return course.teacher_id._id === user?._id;
+    return course.teacher_id?._id === user?._id;
   };
 
   if (isLoading) {
