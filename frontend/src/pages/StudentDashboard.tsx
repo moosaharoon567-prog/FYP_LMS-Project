@@ -223,7 +223,7 @@ export function StudentDashboard() {
                     <div>
                       <p className="font-medium">{quiz.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        {quiz.course_id.title}
+                        {quiz.course_id?.title}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -256,7 +256,7 @@ export function StudentDashboard() {
                 {[
                   ...data.recentGrades.map((grade) => ({
                     key: `a-${grade._id}`,
-                    title: grade.assignment_id.title,
+                    title: grade.assignment_id?.title,
                     type: 'Assignment',
                     date: grade.submission_time,
                     score: grade.grade ?? 0,
@@ -265,7 +265,7 @@ export function StudentDashboard() {
                   })),
                   ...data.recentQuizGrades.map((sub) => ({
                     key: `q-${sub._id}`,
-                    title: sub.quiz_id.title,
+                    title: sub.quiz_id?.title,
                     type: 'Quiz',
                     date: sub.submitted_at,
                     score: sub.score,
