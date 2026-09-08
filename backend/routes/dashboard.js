@@ -39,8 +39,13 @@ router.get('/student', protect, async (req, res) => {
       student_id: studentId,
       grade: { $ne: null }
     })
-      .populate('assignment_id', 'title max_score')
+      .populate('assignment_id', 'title max_score course_id')
       .sort({ submission_time: -1 })
+      .limit(5);
+
+    const recentQuizGrades = await QuizSubmission.find({ student_id: studentId })
+      .populate('quiz_id', 'title question_set course_id')
+      .sort({ submitted_at: -1 })
       .limit(5);
 
     res.json({
@@ -48,6 +53,7 @@ router.get('/student', protect, async (req, res) => {
       pendingAssignments,
       upcomingQuizzes,
       recentGrades,
+      recentQuizGrades,
       stats: {
         totalEnrolled: enrolledCourses.length,
         pendingAssignments: pendingAssignments.length,
@@ -72,7 +78,8 @@ router.get('/teacher', protect, async (req, res) => {
     const allCourses = await Course.find({ teacher_id: teacherId });
     const totalStudents = allCourses.reduce((sum, course) => sum + course.enrolled_students.length, 0);
 
-    const assignmentIds = await Assignment.find({ teacher_id: teacherId }).select('_id');
+    const assignmentDocs = await Assignment.find({ teacher_id: teacherId }).select('_id');
+    const assignmentIds = assignmentDocs.map(a => a._id);
     const pendingGrading = await Submission.countDocuments({
       assignment_id: { $in: assignmentIds },
       grade: null
@@ -82,7 +89,7 @@ router.get('/teacher', protect, async (req, res) => {
       assignment_id: { $in: assignmentIds }
     })
       .populate('student_id', 'name')
-      .populate('assignment_id', 'title')
+      .populate('assignment_id', 'title course_id max_score')
       .sort({ submission_time: -1 })
       .limit(5);
 
@@ -91,10 +98,20 @@ router.get('/teacher', protect, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(5);
 
+    const quizIds = await Quiz.find({ course_id: { $in: allCourses.map(c => c._id) } }).select('_id');
+    const recentQuizSubmissions = await QuizSubmission.find({
+      quiz_id: { $in: quizIds.map(q => q._id) }
+    })
+      .populate('student_id', 'name')
+      .populate('quiz_id', 'title question_set course_id')
+      .sort({ submitted_at: -1 })
+      .limit(5);
+
     res.json({
       myCourses,
       recentSubmissions,
       recentAssignments,
+      recentQuizSubmissions,
       stats: {
         totalCourses: allCourses.length,
         totalStudents,
