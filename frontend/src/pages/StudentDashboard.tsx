@@ -181,7 +181,7 @@ export function StudentDashboard() {
                     <div>
                       <p className="font-medium">{assignment.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        {assignment.course_id.title}
+                        {assignment.course_id?.title}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
