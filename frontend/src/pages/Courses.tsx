@@ -16,11 +16,11 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { coursesAPI } from '@/lib/api';
+import { coursesAPI, usersAPI } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { Search, Plus, BookOpen, Users, ArrowRight } from 'lucide-react';
-import type { Course } from '@/types';
+import { Search, Plus, BookOpen, Users, ArrowRight, Trash2, UserCog } from 'lucide-react';
+import type { Course, User } from '@/types';
 
 export function Courses() {
   const { user } = useAuth();
@@ -31,6 +31,12 @@ export function Courses() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newCourse, setNewCourse] = useState({ title: '', description: '' });
   const [isCreating, setIsCreating] = useState(false);
+  const [isAssignTeacherOpen, setIsAssignTeacherOpen] = useState(false);
+  const [assigningCourse, setAssigningCourse] = useState<Course | null>(null);
+  const [teachers, setTeachers] = useState<User[]>([]);
+  const [selectedTeacherId, setSelectedTeacherId] = useState('');
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadCourses();
@@ -42,7 +48,7 @@ export function Courses() {
       if (user?.role === 'teacher') {
         params.myCourses = true;
       } else if (user?.role === 'student') {
-        params.enrolled = false; // Show all available courses for students
+        params.enrolled = false;
       }
       const response = await coursesAPI.getAll(params);
       setCourses(response.data);
@@ -80,13 +86,42 @@ export function Courses() {
     }
   };
 
+  const handleAssignTeacher = async () => {
+    if (!assigningCourse || !selectedTeacherId) return;
+    setIsAssigning(true);
+    try {
+      await coursesAPI.assignTeacher(assigningCourse._id, selectedTeacherId);
+      toast.success('Teacher assigned successfully');
+      setIsAssignTeacherOpen(false);
+      loadCourses();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to assign teacher');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleDeleteCourse = async (courseId: string) => {
+    if (!confirm('Are you sure you want to delete this course? This will also delete all assignments and quizzes.')) return;
+    setIsDeletingId(courseId);
+    try {
+      await coursesAPI.delete(courseId);
+      toast.success('Course deleted successfully');
+      loadCourses();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to delete course');
+    } finally {
+      setIsDeletingId(null);
+    }
+  };
+
   const filteredCourses = courses.filter(
     (course) =>
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-    const isEnrolled = (course: Course) => {
+  const isEnrolled = (course: Course) => {
     return course.enrolled_students.filter(Boolean).some((s) => s._id === user?._id);
   };
 
@@ -207,11 +242,12 @@ export function Courses() {
                   <div>
                     <CardTitle className="line-clamp-1">{course.title}</CardTitle>
                     <CardDescription className="line-clamp-1">
-                      By {course.teacher_id?.name || 'Unknown Teacher'}
+                      By {course.teacher_id?.name ?? 'Unknown'}
                     </CardDescription>
                   </div>
                   {isEnrolled(course) && <Badge>Enrolled</Badge>}
                   {isTeacher(course) && <Badge variant="secondary">Teacher</Badge>}
+                  {!course.teacher_id && <Badge variant="destructive">No Teacher</Badge>}
                 </div>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col">
@@ -229,7 +265,7 @@ export function Courses() {
                       {course.materials?.length || 0} materials
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button
                       variant="outline"
                       className="flex-1"
@@ -241,6 +277,33 @@ export function Courses() {
                     {user?.role === 'student' && !isEnrolled(course) && (
                       <Button onClick={() => handleEnroll(course._id)}>Enroll</Button>
                     )}
+                    {user?.role === 'admin' && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          title="Assign Teacher"
+                          onClick={async () => {
+                            const res = await usersAPI.getAll('teacher');
+                            setTeachers(res.data);
+                            setAssigningCourse(course);
+                            setSelectedTeacherId('');
+                            setIsAssignTeacherOpen(true);
+                          }}
+                        >
+                          <UserCog className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          title="Delete Course"
+                          disabled={isDeletingId === course._id}
+                          onClick={() => handleDeleteCourse(course._id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -248,6 +311,43 @@ export function Courses() {
           ))}
         </div>
       )}
+
+      {/* Assign Teacher Dialog */}
+      <Dialog open={isAssignTeacherOpen} onOpenChange={setIsAssignTeacherOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Assign Teacher</DialogTitle>
+            <DialogDescription>
+              Assign a teacher to "{assigningCourse?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Teacher</Label>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={selectedTeacherId}
+                onChange={(e) => setSelectedTeacherId(e.target.value)}
+              >
+                <option value="">Select a teacher...</option>
+                {teachers.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name} ({t.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAssignTeacherOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAssignTeacher} disabled={!selectedTeacherId || isAssigning}>
+              {isAssigning ? 'Assigning...' : 'Assign'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
