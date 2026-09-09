@@ -276,7 +276,7 @@ export function CourseDetail() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    
+                    <a
                       href={material.file_url}
                       target="_blank"
                       rel="noopener noreferrer"
