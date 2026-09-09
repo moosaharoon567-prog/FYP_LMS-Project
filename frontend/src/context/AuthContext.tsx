@@ -25,13 +25,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
+    const loginTime = sessionStorage.getItem('loginTime');
+    const SESSION_HOURS = 8;
+
+    // If token exists but is older than SESSION_HOURS, clear it
+    if (token && loginTime) {
+      const elapsed = (Date.now() - parseInt(loginTime)) / (1000 * 60 * 60);
+      if (elapsed > SESSION_HOURS) {
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('loginTime');
+        setIsLoading(false);
+        return;
+      }
+    }
+
     if (token) {
       try {
         const response = await authAPI.getMe();
         setUser(response.data);
       } catch (error) {
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('loginTime');
         setUser(null);
       }
     }
@@ -42,7 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await authAPI.login(email, password);
       const { token, ...userData } = response.data;
-      localStorage.setItem('token', token);
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('loginTime', Date.now().toString());
       setUser(userData);
       toast.success('Login successful!');
     } catch (error: any) {
@@ -56,7 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await authAPI.register(name, email, password, role);
       const { token, ...userData } = response.data;
-      localStorage.setItem('token', token);
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('loginTime', Date.now().toString());
       setUser(userData);
       toast.success('Registration successful!');
     } catch (error: any) {
@@ -67,7 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('loginTime');
     setUser(null);
     toast.success('Logged out successfully');
   };
